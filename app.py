@@ -50,15 +50,28 @@ def get_btc_price():
         return 70000.0 # Prix par défaut si l'API bug
 
 # --- ROUTES ---
-@app.route("/register", methods=["GET", "POST"])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == "POST":
-        hashed_pw = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
-        user = User(username=request.form['username'], password=hashed_pw)
-        db.session.add(user)
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        # --- AJOUTE CE BLOC ICI ---
+        # On vérifie si l'utilisateur existe déjà avant de l'ajouter
+        user_exists = User.query.filter_by(username=username).first()
+        if user_exists:
+            return "Désolé, ce pseudo est déjà utilisé. Choisis-en un autre !"
+        # ---------------------------
+
+        # Si le pseudo est libre, on continue l'inscription normalement
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_user = User(username=username, password=hashed_password)
+        db.session.add(new_user)
         db.session.commit()
+        
         return redirect(url_for('login'))
-    return render_template("register.html")
+
+    return render_template('register.html')
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
