@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Trading Dashboard</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --green: #4ade80; --red: #ef4444; --text: #f8fafc; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 20px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1000px; }
+        .header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; border-left: 4px solid var(--accent); }
+        .label { color: #94a3b8; font-size: 12px; text-transform: uppercase; }
+        .value { font-size: 22px; font-weight: bold; margin-top: 8px; }
+        .actions { display: flex; gap: 15px; margin-bottom: 20px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; font-size: 16px; }
+        .btn-buy { background: var(--green); }
+        .btn-sell { background: var(--red); }
+        #chart-container { height: 400px; background: var(--card); border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 12px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        .logout { color: var(--red); text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+    <h1>Bienvenue, {{ user.username }}!</h1>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <a href="/classement" style="color: #f59e0b; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+            🏆 Classement
+        </a>
+        <a href="/logout" class="logout">Déconnexion 🚪</a>
+    </div>
+</div>
+
+    <div class="stats-grid">
+
+        <div class="card" style="border-left-color: {{ '#4ade80' if pnl >= 0 else '#ef4444' }};">
+    <div class="label">Performance Totale (P&L)</div>
+    <div class="value" style="color: {{ '#4ade80' if pnl >= 0 else '#ef4444' }};">
+        {{ "+" if pnl > 0 }}{{ "{:,.2f}".format(pnl) }} $ 
+        <span style="font-size: 14px;">({{ "{:,.2f}".format(pnl_percent) }}%)</span>
+    </div>
+</div>
+        <div class="card">
+            <div class="label">Solde USD</div>
+            <div class="value">{{ "{:,.2f}".format(user.balance) }} $</div>
+        </div>
+        <div class="card" style="border-left-color: #f59e0b;">
+    <div class="label">Portefeuille BTC</div>
+    <div class="value">
+        <span id="wallet-btc">{{ "%.6f"|format(user.btc_quantity) }}</span> BTC
+    </div>
+    <div id="wallet-usd-value" style="color: #94a3b8; font-size: 14px; margin-top: 5px;">
+        ≈ {{ "{:,.2f}".format(user.btc_quantity * btc_price) }} $
+    </div>
+</div>
+        <div class="card" style="border-left-color: var(--green);">
+            <div class="label">Prix BTC Live</div>
+            <div id="live-price" class="value">{{ "{:,.2f}".format(btc_price) }} $</div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-buy" onclick="trade('buy')">ACHETER 1 000 $</button>
+        <button class="btn-sell" onclick="trade('sell')">TOUT VENDRE</button>
+    </div>
+
+    <div id="chart-container">
+        <div id="tradingview_widget" style="height: 100%;"></div>
+    </div>
+
+    <div class="card" style="border-left: none;">
+        <h3>Historique récent</h3>
+        <table>
+            <thead>
+                <tr><th>TYPE</th><th>PRIX</th><th>QUANTITÉ</th><th>HEURE</th></tr>
+            </thead>
+            <tbody>
+                {% for tx in history %}
+                <tr>
+                    <td style="color: {{ '#4ade80' if tx.type == 'ACHAT' else '#ef4444' }}">{{ tx.type }}</td>
+                    <td>{{ "{:,.2f}".format(tx.price) }} $</td>
+                    <td>{{ "%.6f"|format(tx.amount) }}</td>
+                    <td>{{ tx.timestamp.strftime('%H:%M:%S') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script>
+    new TradingView.widget({ "autosize": true, "symbol": "BINANCE:BTCUSDT", "interval": "H", "theme": "dark", "container_id": "tradingview_widget" });
+
+  setInterval(async () => {
+    try {
+        const res = await fetch('/api/data');
+        const data = await res.json();
+        
+        // 1. Met à jour le prix live
+        document.getElementById('live-price').innerText = data.btc_price.toLocaleString() + ' $';
+        
+        // 2. Récupère la quantité de BTC possédée
+        const btcQty = parseFloat(document.getElementById('wallet-btc').innerText);
+        
+        // 3. Calcule et met à jour la valeur en USD
+        const usdValue = btcQty * data.btc_price;
+        document.getElementById('wallet-usd-value').innerText = '≈ ' + usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' $';
+        
+    } catch (e) {
+        console.log("Erreur de mise à jour");
+    }
+}, 3000);
+
+    async function trade(type) {
+        const res = await fetch(type === 'buy' ? '/buy' : '/sell', { method: 'POST' });
+        if (res.ok) location.reload();
+        else alert("Erreur lors de la transaction");
+    }
+</script>
+</body>
+</html>
