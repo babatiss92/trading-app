@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ event.title }}</title>
+    <style>
+        :root {
+            --bg: #091321;
+            --card: #13253d;
+            --line: #2d4b72;
+            --text: #eef4ff;
+            --muted: #98add0;
+            --accent: #60a5fa;
+            --green: #4ade80;
+            --red: #fb7185;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(96, 165, 250, 0.18), transparent 32%),
+                linear-gradient(180deg, #091321 0%, #0b1728 100%);
+        }
+        .container { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
+        .nav { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+        .nav a {
+            color: var(--muted);
+            text-decoration: none;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(19, 37, 61, 0.78);
+        }
+        .nav a.active { color: var(--text); border-color: rgba(96, 165, 250, 0.55); }
+        .hero, .layout { display: grid; gap: 18px; }
+        .hero { grid-template-columns: 1.2fr 0.8fr; margin-bottom: 18px; }
+        .layout { grid-template-columns: 1.15fr 0.85fr; }
+        .card {
+            background: rgba(19, 37, 61, 0.82);
+            border: 1px solid rgba(45, 75, 114, 0.95);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+        }
+        .headline { margin: 0 0 8px; font-size: 34px; }
+        .muted { color: var(--muted); }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+        .stat {
+            background: rgba(9, 19, 33, 0.72);
+            border: 1px solid rgba(45, 75, 114, 0.7);
+            border-radius: 18px;
+            padding: 14px;
+        }
+        .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+        .value { margin-top: 8px; font-size: 21px; font-weight: 700; }
+        .positive { color: var(--green); }
+        .negative { color: var(--red); }
+        .feedback { padding: 14px 16px; border-radius: 16px; font-weight: 600; margin-bottom: 18px; }
+        .feedback.success { background: rgba(74, 222, 128, 0.13); color: #baf7cd; border: 1px solid rgba(74, 222, 128, 0.25); }
+        .feedback.error { background: rgba(251, 113, 133, 0.12); color: #ffd2db; border: 1px solid rgba(251, 113, 133, 0.22); }
+        .status-banner {
+            padding: 14px 16px;
+            border-radius: 16px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            border: 1px solid rgba(45, 75, 114, 0.6);
+            background: rgba(9, 19, 33, 0.72);
+        }
+        .status-banner.live { color: #baf7cd; border-color: rgba(74, 222, 128, 0.25); background: rgba(74, 222, 128, 0.13); }
+        .status-banner.upcoming { color: #ffd7b7; border-color: rgba(251, 146, 60, 0.25); background: rgba(251, 146, 60, 0.12); }
+        .status-banner.finished { color: #ffd2db; border-color: rgba(251, 113, 133, 0.25); background: rgba(251, 113, 133, 0.12); }
+        .picker, .field input, .field select {
+            width: 100%;
+            padding: 13px 14px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: #0c1a2d;
+            color: var(--text);
+        }
+        .field { margin-top: 14px; }
+        .field label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 13px; }
+        .segmented {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            background: rgba(9, 19, 33, 0.82);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 4px;
+            gap: 4px;
+            margin-top: 14px;
+        }
+        .segmented button {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--muted);
+            background: transparent;
+        }
+        .segmented button.active-buy { color: white; background: rgba(74, 222, 128, 0.24); }
+        .segmented button.active-sell { color: white; background: rgba(251, 113, 133, 0.24); }
+        .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .preset {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(9, 19, 33, 0.78);
+            color: var(--text);
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .submit {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            padding: 15px 18px;
+            font-weight: 800;
+            cursor: pointer;
+            color: #081321;
+            background: linear-gradient(90deg, var(--accent), #93c5fd);
+            margin-top: 18px;
+        }
+        #chart-container {
+            height: 330px;
+            margin-top: 18px;
+            background: rgba(9, 19, 33, 0.72);
+            border-radius: 22px;
+            overflow: hidden;
+            border: 1px solid rgba(45, 75, 114, 0.7);
+        }
+        .chart-frame {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+        th, td {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid rgba(45, 75, 114, 0.55);
+            vertical-align: top;
+        }
+        th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+        @media (max-width: 980px) {
+            .hero, .layout, .stats { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <a href="/">Dashboard</a>
+        <a href="/classement">Classement</a>
+        <a href="/events" class="active">Events</a>
+    </div>
+
+    {% if feedback %}
+    <div class="feedback {{ feedback_type }}">{{ feedback }}</div>
+    {% endif %}
+
+    <div class="status-banner {{ event_status }}">
+        {% if event_status == 'live' %}
+        Event en cours: le trading est ouvert jusqu'au {{ event.end_date.strftime('%d/%m %H:%M') }}.
+        {% elif event_status == 'upcoming' %}
+        Event a venir: le trading ouvrira le {{ event.start_date.strftime('%d/%m %H:%M') }}.
+        {% else %}
+        Event termine: le trading est ferme depuis le {{ event.end_date.strftime('%d/%m %H:%M') }}.
+        {% endif %}
+    </div>
+
+    <div class="hero">
+        <div class="card">
+            <h1 class="headline">{{ event.title }}</h1>
+            <div class="muted">{{ event.description }}</div>
+
+            <div class="stats">
+                <div class="stat">
+                    <div class="label">Cash event</div>
+                    <div class="value">{{ "{:,.2f}".format(event_stats.cash_balance) }} $</div>
+                </div>
+                <div class="stat">
+                    <div class="label">Valeur totale</div>
+                    <div class="value">{{ "{:,.2f}".format(event_stats.total_value) }} $</div>
+                </div>
+                <div class="stat">
+                    <div class="label">Actifs investis</div>
+                    <div class="value">{{ "{:,.2f}".format(event_stats.total_assets_value) }} $</div>
+                </div>
+                <div class="stat">
+                    <div class="label">Performance</div>
+                    <div class="value {{ 'positive' if event_stats.pnl_total >= 0 else 'negative' }}">
+                        {{ "+" if event_stats.pnl_total > 0 }}{{ "{:,.2f}".format(event_stats.pnl_total) }} $
+                        <span style="font-size: 14px;">({{ "{:,.2f}".format(event_stats.pnl_percent) }}%)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="label">Actif selectionne</div>
+            <form method="GET" action="/events/{{ event.slug }}" style="margin-top: 12px;">
+                <select class="picker" name="symbol" onchange="this.form.submit()">
+                    {% for asset in assets %}
+                    <option value="{{ asset.symbol }}" {% if asset.symbol == active_symbol %}selected{% endif %}>
+                        {{ asset.symbol }} - {{ asset.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% if selected_asset %}
+            <div class="value" style="margin-top: 18px;">{{ selected_asset.symbol }} a {{ "{:,.2f}".format(selected_price) }} $</div>
+            <div class="muted">Position event: {{ "{:,.6f}".format(selected_position.quantity) }} unite(s)</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="layout">
+        <div class="card">
+            {% if selected_asset %}
+            <form method="POST" action="/events/{{ event.slug }}/trade">
+                <input type="hidden" name="symbol" value="{{ selected_asset.symbol }}">
+                <input type="hidden" name="side" id="side-input" value="buy">
+
+                <div class="segmented">
+                    <button type="button" id="buy-btn" class="active-buy" onclick="setSide('buy')" {% if not can_trade_event %}disabled{% endif %}>Acheter</button>
+                    <button type="button" id="sell-btn" onclick="setSide('sell')" {% if not can_trade_event %}disabled{% endif %}>Vendre</button>
+                </div>
+
+                <div class="field">
+                    <label for="input_mode">Je saisis en</label>
+                    <select name="input_mode" id="input_mode" onchange="toggleInputMode()" {% if not can_trade_event %}disabled{% endif %}>
+                        <option value="amount">Montant USD</option>
+                        <option value="quantity">Quantite</option>
+                    </select>
+                </div>
+
+                <div class="field amount-field">
+                    <label for="amount_usd">Montant USD</label>
+                    <input type="number" step="0.01" min="0" name="amount_usd" id="amount_usd" placeholder="Ex: 500" {% if not can_trade_event %}disabled{% endif %}>
+                </div>
+
+                <div class="presets amount-field">
+                    <button type="button" class="preset" onclick="fillAmount(100)" {% if not can_trade_event %}disabled{% endif %}>100 $</button>
+                    <button type="button" class="preset" onclick="fillAmount(500)" {% if not can_trade_event %}disabled{% endif %}>500 $</button>
+                    <button type="button" class="preset" onclick="fillAmount(1000)" {% if not can_trade_event %}disabled{% endif %}>1000 $</button>
+                    <button type="button" class="preset" onclick="fillAmount(2500)" {% if not can_trade_event %}disabled{% endif %}>2500 $</button>
+                </div>
+
+                <div class="field quantity-field" style="display: none;">
+                    <label for="quantity">Quantite</label>
+                    <input type="number" step="0.000001" min="0" name="quantity" id="quantity" placeholder="Ex: 0.25" {% if not can_trade_event %}disabled{% endif %}>
+                </div>
+
+                <button class="submit" type="submit" {% if not can_trade_event %}disabled{% endif %}>Trader dans cet event</button>
+            </form>
+
+            <div id="chart-container">
+                <iframe
+                    class="chart-frame"
+                    src="{{ selected_chart_url }}"
+                    title="Graphique {{ selected_asset.symbol }}"
+                    loading="lazy">
+                </iframe>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="label">Leaderboard event</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Joueur</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for player in leaderboard %}
+                    <tr>
+                        <td>#{{ loop.index }}</td>
+                        <td>{{ player.username }} {% if player.username == current_user.username %}(moi){% endif %}</td>
+                        <td class="{{ 'positive' if player.pnl_percent >= 0 else 'negative' }}">
+                            {{ "+" if player.pnl_percent > 0 }}{{ "{:,.2f}".format(player.pnl_percent) }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="label" style="margin-top: 22px;">Historique event</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ordre</th>
+                        <th>Prix</th>
+                        <th>Quantite</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if recent_transactions %}
+                        {% for tx in recent_transactions %}
+                        <tr>
+                            <td class="{{ 'positive' if tx.side == 'buy' else 'negative' }}">{{ tx.side|upper }} {{ tx.asset.symbol }}</td>
+                            <td>{{ "{:,.2f}".format(tx.price) }} $</td>
+                            <td>{{ "{:,.6f}".format(tx.quantity) }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="muted">Aucune transaction event pour le moment.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+
+            <div class="label" style="margin-top: 22px;">Positions event</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Actif</th>
+                        <th>Valeur</th>
+                        <th>P&amp;L</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if event_stats.holdings %}
+                        {% for holding in event_stats.holdings %}
+                        <tr>
+                            <td>{{ holding.symbol }}</td>
+                            <td>{{ "{:,.2f}".format(holding.market_value) }} $</td>
+                            <td class="{{ 'positive' if holding.pnl >= 0 else 'negative' }}">
+                                {{ "+" if holding.pnl > 0 }}{{ "{:,.2f}".format(holding.pnl) }} $
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="muted">Aucune position event ouverte.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setSide(side) {
+        document.getElementById("side-input").value = side;
+        document.getElementById("buy-btn").className = side === "buy" ? "active-buy" : "";
+        document.getElementById("sell-btn").className = side === "sell" ? "active-sell" : "";
+    }
+
+    function fillAmount(value) {
+        document.getElementById("amount_usd").value = value;
+    }
+
+    function toggleInputMode() {
+        const inputMode = document.getElementById("input_mode").value;
+        document.querySelectorAll(".amount-field").forEach((field) => {
+            field.style.display = inputMode === "amount" ? "" : "none";
+        });
+        document.querySelectorAll(".quantity-field").forEach((field) => {
+            field.style.display = inputMode === "quantity" ? "" : "none";
+        });
+    }
+
+    toggleInputMode();
+    setSide("buy");
+</script>
+</body>
+</html>

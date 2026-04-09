@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Events</title>
+    <style>
+        :root {
+            --bg: #0a1322;
+            --card: #13253d;
+            --line: #2d4b72;
+            --text: #eef4ff;
+            --muted: #98add0;
+            --accent: #60a5fa;
+            --green: #4ade80;
+            --orange: #fb923c;
+            --red: #fb7185;
+        }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(96, 165, 250, 0.18), transparent 32%),
+                radial-gradient(circle at bottom right, rgba(251, 146, 60, 0.12), transparent 28%),
+                linear-gradient(180deg, #0a1322 0%, #0b1728 100%);
+        }
+        .container { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 26px 0 40px; }
+        .nav { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+        .nav a {
+            color: var(--muted);
+            text-decoration: none;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: rgba(19, 37, 61, 0.78);
+        }
+        .nav a.active { color: var(--text); border-color: rgba(96, 165, 250, 0.55); }
+        .hero {
+            background: rgba(19, 37, 61, 0.82);
+            border: 1px solid rgba(45, 75, 114, 0.95);
+            border-radius: 24px;
+            padding: 22px;
+            margin-bottom: 18px;
+        }
+        .hero h1 { margin: 0 0 8px; font-size: 34px; }
+        .muted { color: var(--muted); }
+        .event-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+        .card {
+            background: rgba(19, 37, 61, 0.82);
+            border: 1px solid rgba(45, 75, 114, 0.95);
+            border-radius: 24px;
+            padding: 20px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+        }
+        .status {
+            display: inline-block;
+            padding: 6px 11px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .status.live { background: rgba(74, 222, 128, 0.16); color: #bdf7ce; }
+        .status.upcoming { background: rgba(251, 146, 60, 0.15); color: #ffd3b0; }
+        .status.finished { background: rgba(251, 113, 133, 0.14); color: #ffd2db; }
+        .meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
+        .meta-box {
+            background: rgba(10, 19, 34, 0.78);
+            border: 1px solid rgba(45, 75, 114, 0.65);
+            border-radius: 18px;
+            padding: 14px;
+        }
+        .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+        .value { margin-top: 8px; font-size: 21px; font-weight: 700; }
+        .join-btn {
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            padding: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            color: #081321;
+            background: linear-gradient(90deg, var(--accent), #93c5fd);
+        }
+        .secondary-btn {
+            display: block;
+            width: 100%;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 16px;
+            padding: 14px;
+            font-weight: 800;
+            color: var(--text);
+            background: rgba(96, 165, 250, 0.16);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            margin-top: 12px;
+        }
+        .joined-note {
+            width: 100%;
+            border-radius: 16px;
+            padding: 14px;
+            text-align: center;
+            background: rgba(74, 222, 128, 0.15);
+            color: #baf7cd;
+            font-weight: 700;
+        }
+        ul { margin: 12px 0 0; padding-left: 18px; }
+        li { margin-bottom: 6px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+        th, td {
+            text-align: left;
+            padding: 11px 8px;
+            border-bottom: 1px solid rgba(45, 75, 114, 0.55);
+        }
+        th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+        .positive { color: var(--green); }
+        .prize { color: #ffd2a8; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="nav">
+        <a href="/">Dashboard</a>
+        <a href="/classement">Classement</a>
+        <a href="/events" class="active">Events</a>
+    </div>
+
+    <div class="hero">
+        <h1>Events hebdomadaires</h1>
+        <div class="muted">Une premiere V1 pour organiser des competitions courtes avec cashprize et leaderboard.</div>
+        <div class="muted" style="margin-top: 10px;">
+            Ta performance globale actuelle: <strong class="{{ 'positive' if portfolio.pnl_percent >= 0 else '' }}">{{ "{:,.2f}".format(portfolio.pnl_percent) }}%</strong>
+        </div>
+    </div>
+
+    <div class="event-grid">
+        {% for card in event_cards %}
+        <div class="card">
+            <span class="status {{ card.status }}">{{ card.status }}</span>
+            <h2>{{ card.event.title }}</h2>
+            <div class="muted">{{ card.event.description }}</div>
+
+            <div class="meta">
+                <div class="meta-box">
+                    <div class="label">Cashprize</div>
+                    <div class="value prize">{{ "{:,.0f}".format(card.event.cash_prize) }} $</div>
+                </div>
+                <div class="meta-box">
+                    <div class="label">Participants</div>
+                    <div class="value">{{ card.participant_count }}</div>
+                </div>
+                <div class="meta-box">
+                    <div class="label">Debut</div>
+                    <div class="value">{{ card.event.start_date.strftime('%d/%m %H:%M') }}</div>
+                </div>
+                <div class="meta-box">
+                    <div class="label">Fin</div>
+                    <div class="value">{{ card.event.end_date.strftime('%d/%m %H:%M') }}</div>
+                </div>
+            </div>
+
+            <div class="label">Univers investissable</div>
+            <ul>
+                {% for symbol in card.allowed_assets[:6] %}
+                <li>{{ symbol }}</li>
+                {% endfor %}
+            </ul>
+
+            {% if card.joined %}
+                <div class="joined-note" style="margin-top: 16px;">Tu participes deja a cet event.</div>
+                <a href="/events/{{ card.event.slug }}" class="secondary-btn">Entrer dans l'event</a>
+            {% elif card.status == 'upcoming' %}
+                <form method="POST" action="/events/{{ card.event.slug }}/join" style="margin-top: 16px;">
+                    <button type="submit" class="join-btn">S'inscrire avant l'ouverture</button>
+                </form>
+            {% elif card.status == 'live' %}
+                <form method="POST" action="/events/{{ card.event.slug }}/join" style="margin-top: 16px;">
+                    <button type="submit" class="join-btn">Rejoindre l'event en cours</button>
+                </form>
+            {% else %}
+                <div class="joined-note" style="margin-top: 16px; background: rgba(251, 113, 133, 0.14); color: #ffd2db;">
+                    Event termine.
+                </div>
+            {% endif %}
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Joueur</th>
+                        <th>Perf</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if card.leaderboard %}
+                        {% for player in card.leaderboard %}
+                        <tr>
+                            <td>#{{ loop.index }}</td>
+                            <td>{{ player.username }}</td>
+                            <td class="{{ 'positive' if player.pnl_percent >= 0 else '' }}">
+                                {{ "+" if player.pnl_percent > 0 }}{{ "{:,.2f}".format(player.pnl_percent) }}%
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="3" class="muted">Pas encore de participants.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</body>
+</html>
